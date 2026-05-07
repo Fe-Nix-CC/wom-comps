@@ -2,8 +2,8 @@ name: Weekly Comps Generation
 
 on:
   schedule:
-    # Runs at 00:00 (12 AM) UTC every Thursday
-    - cron: "0 0 * * 4"
+    # Runs at 04:52 UTC (2:52 PM AEST) every Thursday
+    - cron: "52 4 * * 4"
   workflow_dispatch:
 
 jobs:
