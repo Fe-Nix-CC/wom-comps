@@ -1,0 +1,3 @@
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+*/15 * * * * root cd /app && corepack pnpm run create-comps >> /var/log/create-comps.log 2>&1
+
