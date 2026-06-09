@@ -4,12 +4,10 @@ This project automates the creation of WOM competitions for a group.
 
 Competition configs live in `/src/create_comps/comps_config.ts`.
 
+Runtime config lives in `.env`, see `.env.sample` for an example.
+
 ## Running this project
 
-Requires `node` and `pnpm`.
+Requires `docker-compose`.
 
-Run:
-
-```bash
-pnpm run create-comps
-```
+Run `sudo docker compose up --build` to run the container.
