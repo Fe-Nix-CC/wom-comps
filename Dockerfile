@@ -1,6 +1,8 @@
 FROM node:20-bullseye-slim
 
-WORKDIR /app
+RUN useradd -ms /bin/bash womuser
+
+WORKDIR /home/womuser/app
 
 RUN apt-get update && apt-get install -y --no-install-recommends cron && rm -rf /var/lib/apt/lists/*
 
