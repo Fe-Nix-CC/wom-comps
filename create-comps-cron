@@ -1,2 +1,2 @@
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-*/15 * * * * womuser cd ~/app && corepack pnpm run create-comps >> ~/create-comps.log 2>&1
+0 0 * * 2 womuser cd ~/app && corepack pnpm run create-comps >> ~/create-comps.log 2>&1
