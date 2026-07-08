@@ -6,21 +6,22 @@ import { pickNthMetric } from "./pick_nth_metric";
 import { COMP_CONFIGS } from "./comps_config";
 import { getDurationInfo } from "./get_duration_info";
 import { formatISO } from "date-fns";
+import { debugLog } from "../utils/debug_log";
 
 const womClient = new WOMClient({
   userAgent: env.WOM_API_USER_AGENT,
 });
 
 async function main() {
-  console.log("Duration:", env.COMP_DURATION);
+  debugLog("Duration:", env.COMP_DURATION);
 
   const { startsAt, endsAt, compIndex } = getDurationInfo(
     new UTCDate(),
     env.COMP_DURATION,
   );
 
-  console.log("Start:", formatISO(startsAt));
-  console.log("End:", formatISO(startsAt));
+  debugLog("Start:", formatISO(startsAt));
+  debugLog("End:", formatISO(startsAt));
 
   for (const compConfig of COMP_CONFIGS) {
     const metric = pickNthMetric(
@@ -31,8 +32,8 @@ async function main() {
 
     const title = compConfig.getName({ metric });
 
-    console.log("");
-    console.log(`Creating comp for '${title}'...`);
+    debugLog("");
+    debugLog(`Creating comp for '${title}'...`);
 
     const {
       competition: { id: competitionId, participations },
@@ -46,10 +47,10 @@ async function main() {
       teams: [],
     });
 
-    console.log(`Done! Competition ID: ${competitionId}`);
+    debugLog(`Done! Competition ID: ${competitionId}`);
 
     if (compConfig.excludeRegs) {
-      console.log("Excluding regs...");
+      debugLog("Excluding regs...");
       const irons = participations
         .filter(({ player }) => player.type !== "regular")
         .map(({ player }) => player.username);
@@ -60,7 +61,7 @@ async function main() {
         env.WOM_GROUP_KEY,
       );
 
-      console.log(
+      debugLog(
         `Done! Old count: ${participations.length}, new count: ${irons.length}`,
       );
     }
