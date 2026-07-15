@@ -7,6 +7,7 @@ import { COMP_CONFIGS } from "./comps_config";
 import { getDurationInfo } from "./get_duration_info";
 import { formatISO } from "date-fns";
 import { debugLog } from "../utils/debug_log";
+import { retryAsync } from "../utils/retry";
 
 const womClient = new WOMClient({
   userAgent: env.WOM_API_USER_AGENT,
@@ -37,15 +38,17 @@ async function main() {
 
     const {
       competition: { id: competitionId, participations },
-    } = await womClient.competitions.createCompetition({
-      title,
-      metric,
-      startsAt,
-      endsAt,
-      groupId: env.WOM_GROUP_ID,
-      groupVerificationCode: env.WOM_GROUP_KEY,
-      teams: [],
-    });
+    } = await retryAsync(() =>
+      womClient.competitions.createCompetition({
+        title,
+        metric,
+        startsAt,
+        endsAt,
+        groupId: env.WOM_GROUP_ID,
+        groupVerificationCode: env.WOM_GROUP_KEY,
+        teams: [],
+      }),
+    );
 
     debugLog(`Done! Competition ID: ${competitionId}`);
 
@@ -55,10 +58,12 @@ async function main() {
         .filter(({ player }) => player.type !== "regular")
         .map(({ player }) => player.username);
 
-      await womClient.competitions.editCompetition(
-        competitionId,
-        { participants: irons },
-        env.WOM_GROUP_KEY,
+      await retryAsync(() =>
+        womClient.competitions.editCompetition(
+          competitionId,
+          { participants: irons },
+          env.WOM_GROUP_KEY,
+        ),
       );
 
       debugLog(
