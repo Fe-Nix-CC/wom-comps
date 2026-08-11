@@ -8,7 +8,6 @@ import { getDurationInfo } from "./get_duration_info";
 import { formatISO } from "date-fns";
 import { debugLog } from "../utils/debug_log";
 import { retryAsync } from "../utils/retry";
-import fetch from 'node-fetch';
 
 const womClient = new WOMClient({
   userAgent: env.WOM_API_USER_AGENT,
@@ -75,17 +74,27 @@ async function main() {
     }
   } catch (error) {
     await retryAsync(
-      () =>
-        fetch(
+      async () => {
+        const response = await fetch(
           env.ERROR_WEBHOOK,
           {
             method: 'POST',
-            body:
-              '# Something went wrong automatically creating competitions!\n' +
-              JSON.stringify(error, Object.getOwnPropertyNames(error)),
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              content:
+                '# Something went wrong automatically creating competitions!\n```\n' +
+                JSON.stringify(error, Object.getOwnPropertyNames(error), '\n') +
+                '\n```',
+            }),
           }
-        ),
-      Infinity,
+        )
+        if (!response.ok) {
+          throw new Error('Response status: ' + response.status)
+        }
+      },
+      20, // Bit under a week
     )
     throw error
   }
