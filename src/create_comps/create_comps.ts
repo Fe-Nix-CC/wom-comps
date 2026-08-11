@@ -8,68 +8,86 @@ import { getDurationInfo } from "./get_duration_info";
 import { formatISO } from "date-fns";
 import { debugLog } from "../utils/debug_log";
 import { retryAsync } from "../utils/retry";
+import fetch from 'node-fetch';
 
 const womClient = new WOMClient({
   userAgent: env.WOM_API_USER_AGENT,
 });
 
 async function main() {
-  debugLog("Duration:", env.COMP_DURATION);
+  try {
+    debugLog("Duration:", env.COMP_DURATION);
 
-  const { startsAt, endsAt, compIndex } = getDurationInfo(
-    new UTCDate(),
-    env.COMP_DURATION,
-  );
-
-  debugLog("Start:", formatISO(startsAt));
-  debugLog("End:", formatISO(startsAt));
-
-  for (const compConfig of COMP_CONFIGS) {
-    const metric = pickNthMetric(
-      compIndex,
-      compConfig.metrics,
-      seedrandom(env.WOM_GROUP_ID.toString()),
+    const { startsAt, endsAt, compIndex } = getDurationInfo(
+      new UTCDate(),
+      env.COMP_DURATION,
     );
 
-    const title = compConfig.getName({ metric });
+    debugLog("Start:", formatISO(startsAt));
+    debugLog("End:", formatISO(startsAt));
 
-    debugLog("");
-    debugLog(`Creating comp for '${title}'...`);
-
-    const {
-      competition: { id: competitionId, participations },
-    } = await retryAsync(() =>
-      womClient.competitions.createCompetition({
-        title,
-        metric,
-        startsAt,
-        endsAt,
-        groupId: env.WOM_GROUP_ID,
-        groupVerificationCode: env.WOM_GROUP_KEY,
-        teams: [],
-      }),
-    );
-
-    debugLog(`Done! Competition ID: ${competitionId}`);
-
-    if (compConfig.excludeRegs) {
-      debugLog("Excluding regs...");
-      const irons = participations
-        .filter(({ player }) => player.type !== "regular")
-        .map(({ player }) => player.username);
-
-      await retryAsync(() =>
-        womClient.competitions.editCompetition(
-          competitionId,
-          { participants: irons },
-          env.WOM_GROUP_KEY,
-        ),
+    for (const compConfig of COMP_CONFIGS) {
+      const metric = pickNthMetric(
+        compIndex,
+        compConfig.metrics,
+        seedrandom(env.WOM_GROUP_ID.toString()),
       );
 
-      debugLog(
-        `Done! Old count: ${participations.length}, new count: ${irons.length}`,
+      const title = compConfig.getName({ metric });
+
+      debugLog("");
+      debugLog(`Creating comp for '${title}'...`);
+
+      const {
+        competition: { id: competitionId, participations },
+      } = await retryAsync(() =>
+        womClient.competitions.createCompetition({
+          title,
+          metric,
+          startsAt,
+          endsAt,
+          groupId: env.WOM_GROUP_ID,
+          groupVerificationCode: env.WOM_GROUP_KEY,
+          teams: [],
+        }),
       );
+
+      debugLog(`Done! Competition ID: ${competitionId}`);
+
+      if (compConfig.excludeRegs) {
+        debugLog("Excluding regs...");
+        const irons = participations
+          .filter(({ player }) => player.type !== "regular")
+          .map(({ player }) => player.username);
+
+        await retryAsync(() =>
+          womClient.competitions.editCompetition(
+            competitionId,
+            { participants: irons },
+            env.WOM_GROUP_KEY,
+          ),
+        );
+
+        debugLog(
+          `Done! Old count: ${participations.length}, new count: ${irons.length}`,
+        );
+      }
     }
+  } catch (error) {
+    await retryAsync(
+      () =>
+        fetch(
+          env.ERROR_WEBHOOK,
+          {
+            method: 'POST',
+            body:
+              '# Something went wrong automatically creating competitions!\n' +
+              JSON.stringify(error, Object.getOwnPropertyNames(error)),
+          }
+        ),
+      Infinity,
+    )
+    throw error
   }
 }
 
